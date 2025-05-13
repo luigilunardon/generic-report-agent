@@ -7,7 +7,7 @@ import sys
 from dotenv import load_dotenv
 from tavily import AsyncTavilyClient, TavilyClient
 
-from constants import TAVILY_DAYS, TAVILY_TOPIC
+from constants import config
 from utils.load_key import load_api_key
 from utils.save_file import save_state
 
@@ -17,17 +17,18 @@ load_dotenv()
 tavily_client = TavilyClient(os.getenv("TAVILY_API_KEY"))
 tavily_async_client = AsyncTavilyClient()
 
+tavily_config = config["tavily"]
 
 search_params = {
     "max_results": 3,
     "include_raw_content": True,
-    "topic": TAVILY_TOPIC,
+    "topic": tavily_config["topic"],
     "search_depth": "advanced",
     "chunks_per_source": 3,
 }
 
-if TAVILY_TOPIC == "news":
-    search_params["days"] = TAVILY_DAYS
+if tavily_config["topic"] == "news":
+    search_params["days"] = tavily_config["days"]
 
 
 async def web_search(state, field_name, queries):

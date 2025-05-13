@@ -13,6 +13,7 @@ RECOVERY_DIR = SRC_DIR / "json" / "recovery"
 PROMPT_FILE = SRC_DIR / "json" / "prompt.json"
 CONFIG_FILE = SRC_DIR / "config.toml"
 
+
 def load_config(filename):
     """Load config from toml file."""
     with Path.open(filename, "rb") as f:

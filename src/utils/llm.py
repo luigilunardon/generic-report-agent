@@ -1,7 +1,6 @@
 "LLM querying functions."
 
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -9,7 +8,6 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.rate_limiters import InMemoryRateLimiter
-from langchain_groq import ChatGroq
 
 from constants import PROMPT_FILE
 from utils.save_file import save_state
@@ -28,21 +26,6 @@ default_rate_limiter = InMemoryRateLimiter(
     requests_per_second=4,
     check_every_n_seconds=0.1,
     max_bucket_size=10,
-)
-
-llm_t0 = ChatGroq(
-    model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
-    temperature=0.0,
-    max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
-    rate_limiter=default_rate_limiter,
-)
-
-
-llm_t9 = ChatGroq(
-    model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
-    temperature=0.9,
-    max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
-    rate_limiter=default_rate_limiter,
 )
 
 
@@ -130,6 +113,12 @@ def check_hallucination(state, llm, field_name, human_prompt=""):
 
     """
     if not state.load_recovery:
+        if state.max_retry == 0:
+            hallucination_message = (
+                f"WARNING **HALLUCINATION DETECTED**\n\n{getattr(state, field_name)}"
+            )
+            setattr(state, field_name, hallucination_message)
+            return {"retry": "no"}
         system_prompt = PROMPTS[f"{field_name.upper()}_HALLUCINATION"].get("text", "")
         human_prompt = f"{field_name.replace('_', ' ')}: {getattr(state, field_name)}"
         prompt = ChatPromptTemplate.from_messages(
@@ -140,7 +129,14 @@ def check_hallucination(state, llm, field_name, human_prompt=""):
         score = ""
         while score not in {"yes", "no"}:
             try:
+                if state.max_retry == 0:
+                    hallucination_message = (
+                        f"WARNING **AMBIGUOUS ANSWER**\n\n{getattr(state, field_name)}"
+                    )
+                    setattr(state, field_name, hallucination_message)
+                    return {"retry": "no"}
                 score = hallucination_grader.invoke({})
+                state.max_retry = state.max_retry - 1
             except Exception as e:
                 print(e)
                 state.load_recovery = True

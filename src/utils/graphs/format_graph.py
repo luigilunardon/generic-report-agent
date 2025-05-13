@@ -1,12 +1,14 @@
 "Graph definition."
 
+import os
 from dataclasses import dataclass
 from typing import Optional
 
+from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 
 from constants import RECOVERY_DIR
-from utils.llm import llm_t0, query_llm
+from utils.llm import default_rate_limiter, query_llm
 
 
 @dataclass
@@ -30,12 +32,26 @@ class FormatState:
 
 def get_report(x):
     """Get the report."""
-    return query_llm(x, llm_t0, "pre_report")
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
+
+    return query_llm(x, llm, "pre_report")
 
 
 def format_report(x):
     """Format report."""
-    return query_llm(x, llm_t0, "report")
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
+
+    return query_llm(x, llm, "report")
 
 
 def format_graph_builder():

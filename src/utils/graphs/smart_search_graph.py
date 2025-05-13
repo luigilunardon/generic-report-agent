@@ -1,14 +1,16 @@
 "Graph definition."
 
+import os
 from dataclasses import dataclass, field
 from typing import Optional
 
+from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
 from constants import RECOVERY_DIR
 from utils.graphs.search_graph import SearchState, search_graph_builder
-from utils.llm import llm_t0, query_llm
+from utils.llm import default_rate_limiter, query_llm
 
 retry_policy = RetryPolicy(max_attempts=4)
 
@@ -36,7 +38,14 @@ class SmartSearchState:
 
 def get_queries(x):
     """Get search results."""
-    return query_llm(x, llm_t0, "smart_search_queries", json_output=True)
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
+
+    return query_llm(x, llm, "smart_search_queries", json_output=True)
 
 
 async def get_summary(x):

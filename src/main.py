@@ -2,7 +2,7 @@
 
 import asyncio
 
-from constants import QUERY
+from constants import config
 from utils.graphs.task_graph import TaskPlannerState, task_graph_builder
 from utils.save_file import md_to_docx, mk_output_dir, save_md
 
@@ -36,7 +36,8 @@ if __name__ == "__main__":
     If a query is set in the environment variable (QUERY), it will be used.
     Otherwise, it prompts the user to input a company name.
     """
-    query = input("Enter the query: ") if QUERY is None else QUERY
+    config_query = config["parameters"]["query"]
+    query = config_query if config_query else input("Enter the query: ")
 
     # Run the pipeline for the specified company
     asyncio.run(pipeline(query))

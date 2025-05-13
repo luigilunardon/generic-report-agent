@@ -1,20 +1,22 @@
 "Graph definition."
 
+import os
 import shutil
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
-from constants import RECOVERY_DIR, SAVE_FINAL_STATE
+from constants import RECOVERY_DIR, config
 from utils.graphs.create_graph import CreateState, create_graph_builder
 from utils.graphs.format_graph import FormatState, format_graph_builder
 from utils.graphs.search_graph import SearchState, search_graph_builder
 from utils.graphs.smart_search_graph import SmartSearchState, smart_search_graph_builder
-from utils.llm import human_validation_llm, llm_t0, query_llm
+from utils.llm import default_rate_limiter, human_validation_llm, query_llm
 from utils.save_file import save_state
 
 retry_policy = RetryPolicy(max_attempts=4)
@@ -79,7 +81,14 @@ class TaskPlannerState:
 
 def get_title(x):
     """Generate a title."""
-    return query_llm(x, llm_t0, "title")
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
+
+    return query_llm(x, llm, "title")
 
 
 def get_recovery(x):
@@ -91,12 +100,25 @@ def get_recovery(x):
 
 def get_tasks(x):
     """Generate list of tasks."""
-    return query_llm(x, llm_t0, "tasks", json_output=True)
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
+
+    return query_llm(x, llm, "tasks", json_output=True)
 
 
 def check_tasks(x):
     """Check list of tasks."""
-    return human_validation_llm(x, llm_t0, "tasks")
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
+    return human_validation_llm(x, llm, "tasks")
 
 
 async def execute_tasks(x):
@@ -119,7 +141,7 @@ async def execute_tasks(x):
             print(f"Error in task {i}: {task_type}.\n\n{e}")
             x.load_recovery = True
             sys.exit(1)
-    if SAVE_FINAL_STATE:
+    if config["parameters"]["save_final_state"]:
         save_state(x, recovery_file_path)
     else:
         shutil.rmtree(recovery_directory)

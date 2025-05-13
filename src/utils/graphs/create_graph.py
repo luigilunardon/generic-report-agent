@@ -1,12 +1,14 @@
 "Graph definition."
 
+import os
 from dataclasses import dataclass
 from typing import Optional
 
+from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 
 from constants import RECOVERY_DIR
-from utils.llm import check_hallucination, llm_t0, query_llm
+from utils.llm import check_hallucination, default_rate_limiter, query_llm
 
 
 @dataclass
@@ -18,6 +20,7 @@ class CreateState:
         background (str): Background information.
         create_output (str): Query results.
         retry (bool): Boolean value for hallucination handling.
+        max_retry (int): Max number of hallucination retry checks.
         load_recovery (bool): Boolean value for loading recovery files.
         recovery_path (str): Name of the recovery file.
     """
@@ -27,12 +30,19 @@ class CreateState:
     create_output: Optional[str] = None
     retry: Optional[bool] = False
     load_recovery: Optional[bool] = False
+    max_retry: Optional[int] = 3
     recovery_path: Optional[str] = str(RECOVERY_DIR / "create.json")
 
 
 def ask_query(x):
     """Ask query."""
-    return query_llm(x, llm_t0, "create_output")
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
+    return query_llm(x, llm, "create_output")
 
 
 def check_answer(x):
@@ -42,9 +52,15 @@ def check_answer(x):
         f"AI generated text:\n{x.create_output}\n\n\n\n"
         f"Background:\n{x.background}"
     )
+    llm = ChatGroq(
+        model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
+        temperature=0.0,
+        max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
+        rate_limiter=default_rate_limiter,
+    )
     return check_hallucination(
         x,
-        llm_t0,
+        llm,
         "create_output",
         human_prompt,
     )
