@@ -2,23 +2,21 @@
 
 from pathlib import Path
 
-# Query
-QUERY = None
+import tomllib
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = BASE_DIR / "outputs"
 SRC_DIR = BASE_DIR / "src"
 RECOVERY_DIR = SRC_DIR / "json" / "recovery"
+
 PROMPT_FILE = SRC_DIR / "json" / "prompt.json"
+CONFIG_FILE = SRC_DIR / "config.toml"
 
-# Tavily Configuration
-TAVILY_DAYS = 100
-TAVILY_TOPIC = "general"
+def load_config(filename):
+    """Load config from toml file."""
+    with Path.open(filename, "rb") as f:
+        return tomllib.load(f)
 
-# LLM Configuration
-MODEL_NAME = "llama-3.3-70b-versatile"
 
-# Other Configurations
-MAX_CONCURRENCY = 1
-SAVE_FINAL_STATE = False
+config = load_config(CONFIG_FILE)

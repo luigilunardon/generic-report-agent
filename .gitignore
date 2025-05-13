@@ -5,4 +5,4 @@ README.pdf
 outputs/*
 !outputs/template.docx
 src/pandoc*
-src/json/recovery/state_recovery*
+src/json/recovery/*

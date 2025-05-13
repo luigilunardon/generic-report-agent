@@ -1,0 +1,17 @@
+# Tavily constants
+[tavily]
+days = 100
+topic = "general"
+
+# LLM Configuration
+[llm]
+model_name = "llama-3.3-70b-versatile"
+
+# Other Configurations
+[settings]
+max_concurrency = 1
+
+# Parameters
+[parameters]
+query = "" 
+save_final_state = true
