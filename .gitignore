@@ -1,0 +1,8 @@
+src/.env
+__pycache__
+.ruff_cache
+README.pdf
+outputs/*
+!outputs/template.docx
+src/pandoc*
+src/json/recovery/state_recovery*
