@@ -7,7 +7,7 @@ import sys
 from dotenv import load_dotenv
 from tavily import AsyncTavilyClient, TavilyClient
 
-from config import TAVILY_DAYS, TAVILY_TOPIC
+from constants import TAVILY_DAYS, TAVILY_TOPIC
 from utils.load_key import load_api_key
 from utils.save_file import save_state
 
@@ -31,7 +31,7 @@ if TAVILY_TOPIC == "news":
 
 
 async def web_search(state, field_name, queries):
-    """Searches the web for each query and returns a formatted string of sources.
+    """Search the web for each query and returns a formatted string of sources.
 
     Args:
         state (StateGraph State): The state of the graph.
@@ -40,6 +40,7 @@ async def web_search(state, field_name, queries):
 
     Returns:
         A list of sources, one for each query.
+
     """
     if not state.load_recovery or (
         getattr(state, field_name) is None or not getattr(state, field_name)

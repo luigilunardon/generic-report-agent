@@ -6,7 +6,7 @@ from typing import Optional
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
-from config import RECOVERY_PATH
+from constants import RECOVERY_DIR
 from utils.graphs.search_graph import SearchState, search_graph_builder
 from utils.llm import llm_t0, query_llm
 
@@ -31,7 +31,7 @@ class SmartSearchState:
     smart_search_summary: Optional[str] = None
     retry: Optional[bool] = False
     load_recovery: Optional[bool] = False
-    recovery_path: Optional[str] = str(RECOVERY_PATH / "smart_search.json")
+    recovery_path: Optional[str] = str(RECOVERY_DIR / "smart_search.json")
 
 
 def get_queries(x):
@@ -48,7 +48,7 @@ async def get_summary(x):
 
 
 def smart_search_graph_builder():
-    """Builds and compiles a LangGraph StateGraph.
+    """Build and compiles a LangGraph StateGraph.
 
     Returns:
         Compiled StateGraph object.

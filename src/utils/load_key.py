@@ -2,7 +2,7 @@
 
 from dotenv import get_key, set_key
 
-from config import SRC_DIR
+from constants import SRC_DIR
 
 
 def load_api_key(keys):

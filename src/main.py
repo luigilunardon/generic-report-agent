@@ -2,13 +2,13 @@
 
 import asyncio
 
-from config import QUERY
+from constants import QUERY
 from utils.graphs.task_graph import TaskPlannerState, task_graph_builder
 from utils.save_file import md_to_docx, mk_output_dir, save_md
 
 
 async def pipeline(query: str):
-    """Main pipeline to process the query.
+    """Process the query.
 
     This function orchestrates the entire process, which includes:
     1. Generate a list of tasks.

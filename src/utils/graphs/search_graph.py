@@ -5,7 +5,7 @@ from typing import Optional
 
 from langgraph.graph import END, START, StateGraph
 
-from config import RECOVERY_PATH
+from constants import RECOVERY_DIR
 from utils.llm import check_hallucination, llm_t0, query_llm
 from utils.web_search import web_search
 
@@ -28,7 +28,7 @@ class SearchState:
     search_summary: Optional[str] = None
     retry: Optional[bool] = False
     load_recovery: Optional[bool] = False
-    recovery_path: Optional[str] = str(RECOVERY_PATH / "search.json")
+    recovery_path: Optional[str] = str(RECOVERY_DIR / "search.json")
 
 
 async def get_search(x):
@@ -52,7 +52,7 @@ def check_summary(x):
 
 
 def search_graph_builder():
-    """Builds and compiles a LangGraph StateGraph.
+    """Build and compiles a LangGraph StateGraph.
 
     Returns:
         Compiled StateGraph object.

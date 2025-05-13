@@ -13,9 +13,7 @@ exclude = [
     ".pytest_cache",
 ]
 fix = true
-
-[tool.ruff.lint]
-select = [
+lint.select = [
     "F",  # Pyflakes
     "E",  # pycodestyle (Error)
     "W",  # pycodestyle (Warning)
@@ -45,7 +43,6 @@ select = [
     "SLOT",  # flake8-slots
     "SIM",  # flake8-simplify
     "TID",  # flake8-tidy-imports
-    "TCH",  # flake8-type-checking
     "INT",  # flake8-gettext
     "ARG",  # flake8-unused-arguments
     "PTH",  # flake8-use-pathlib
@@ -57,7 +54,7 @@ select = [
     "RUF",  # Ruff-specific rules
     "D",  # pydocstyle
 ]
-ignore = [
+lint.ignore = [
     "W191",
     "E111",
     "E114",
@@ -73,16 +70,13 @@ ignore = [
     "ISC001",
     "ISC002",
     "PERF203",
+    "D203",
+    "D213",
 ]
 
-fixable = ["ALL"]
-unfixable = []
+lint.fixable = ["ALL"]
+lint.unfixable = []
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.ruff.lint.pylint]
-max-args = 10
 
 [tool.ruff.format]
 quote-style = "preserve"

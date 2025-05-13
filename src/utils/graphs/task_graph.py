@@ -9,7 +9,7 @@ from typing import Optional
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
-from config import RECOVERY_PATH, SAVE_FINAL_STATE
+from constants import RECOVERY_DIR, SAVE_FINAL_STATE
 from utils.graphs.create_graph import CreateState, create_graph_builder
 from utils.graphs.format_graph import FormatState, format_graph_builder
 from utils.graphs.search_graph import SearchState, search_graph_builder
@@ -74,7 +74,7 @@ class TaskPlannerState:
     retry: Optional[bool] = False
     load_recovery: Optional[bool] = False
     task_output: Optional[list] = field(default_factory=list)
-    recovery_path: Optional[Path] = str(RECOVERY_PATH / "task.json")
+    recovery_path: Optional[Path] = str(RECOVERY_DIR / "task.json")
 
 
 def get_title(x):
@@ -84,7 +84,7 @@ def get_title(x):
 
 def get_recovery(x):
     """Generate the recovery path."""
-    directory_path = RECOVERY_PATH / x.title.replace(" ", "_")
+    directory_path = RECOVERY_DIR / x.title.replace(" ", "_")
     Path.mkdir(directory_path, exist_ok=True, parents=True)
     return {"recovery_path": str(directory_path / "task.json")}
 
@@ -104,7 +104,7 @@ async def execute_tasks(x):
     tasks = x.tasks
     task_output = []
     recovery_file_path = x.recovery_path
-    recovery_directory = RECOVERY_PATH / x.title.replace(" ", "_")
+    recovery_directory = RECOVERY_DIR / x.title.replace(" ", "_")
 
     for i, (task_type, query, background) in enumerate(tasks[len(task_output) :]):
         builder, state_class, get_args, summary_field = _task_handler[task_type]
@@ -128,7 +128,7 @@ async def execute_tasks(x):
 
 
 def task_graph_builder():
-    """Builds and compiles a LangGraph StateGraph.
+    """Build and compiles a LangGraph StateGraph.
 
     Returns:
         Compiled StateGraph object.

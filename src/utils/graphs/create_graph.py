@@ -5,7 +5,7 @@ from typing import Optional
 
 from langgraph.graph import END, START, StateGraph
 
-from config import RECOVERY_PATH
+from constants import RECOVERY_DIR
 from utils.llm import check_hallucination, llm_t0, query_llm
 
 
@@ -27,7 +27,7 @@ class CreateState:
     create_output: Optional[str] = None
     retry: Optional[bool] = False
     load_recovery: Optional[bool] = False
-    recovery_path: Optional[str] = str(RECOVERY_PATH / "create.json")
+    recovery_path: Optional[str] = str(RECOVERY_DIR / "create.json")
 
 
 def ask_query(x):
@@ -51,7 +51,7 @@ def check_answer(x):
 
 
 def create_graph_builder():
-    """Builds and compiles a LangGraph StateGraph.
+    """Build and compiles a LangGraph StateGraph.
 
     Returns:
         Compiled StateGraph object.

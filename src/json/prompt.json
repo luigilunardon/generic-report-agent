@@ -12,7 +12,7 @@
     "keywords": ["tasks"]
   },
   "SEARCH_SUMMARY_PROMPT": {
-    "text": "You are a technical research assistant generating one structured section for a broader report, based on a set of detailed search results (15 entries, each rich in content). Your task is to extract, synthesize, and organize the most relevant insights into a concise section that can be embedded directly into the report.\n\nGuidelines:\n- Identify and group the main themes or topics across the sources.\n- Organize the section into 2–4 subsections with clear, descriptive headings.\n- Each subsection should contain 2–5 bullet points of core insights.\n- Avoid redundant or overly general statements.\n- Keep the summary compact and well structured.\n- Use precise and formal language suitable for a professional report.\n- Avoid filler words and vague statements. Keep the language simple and direct but professional.\n- Include URLs of the original sources. \n\nInput: {search_results}\n\nOutput format:Section Title\nSubsection 1 title\nSubsection 1 content\n...\n\nSubsection title.\n- ...",
+    "text": "You are a technical research assistant generating one structured section for a broader report, based on a set of detailed search results (15 entries, each rich in content). Your task is to extract, synthesize, and organize the most relevant insights into a concise section that can be embedded directly into the report.\n\nGuidelines:\n- Identify and group the main themes or topics across the sources.\n- Organize the section into 2–4 subsections with clear, descriptive headings.\n- Each subsection should contain 2–5 bullet points of core insights.\n- Avoid redundant or overly general statements.\n- Keep the summary compact and well structured.\n- Use precise and formal language suitable for a professional report.\n- Avoid filler words and vague statements. Keep the language simple and direct but professional.\n- Include URLs of the sources written in clear text. \n\nInput: {search_results}\n\nOutput format:Section Title\nSubsection 1 title\nSubsection 1 content\n...\n\nSubsection title.\n- ...",
     "keywords": ["search_results"]
   },
   "SEARCH_SUMMARY_HALLUCINATION": {
@@ -20,7 +20,7 @@
     "keywords": []
   },
   "CREATE_OUTPUT_PROMPT": {
-    "text": "You are an expert report writer. Your task is to generate a precise, factual, and well-structured answer to the following query based on the provided background information.\n\nQuery: {query}\n\nBackground:\n{background}\n\nWrite a clear, informative response that directly address the query based on the background content. The answer need to be **PLAUSIBLE**, but you have some room for speculation.\n\nOutput format: A concise, well-written short section suitable for inclusion in a technical report.\n**DO NOT** answer with anything except the report content.",
+    "text": "You are an expert report writer. Your task is to generate a precise, factual, and well-structured answer to the following query based on the provided background information.\n\nQuery: {query}\n\nBackground:\n{background}\n\nWrite a clear, informative response that directly address the query based on the background content. The answer need to be **PLAUSIBLE**, but you have some room for speculation.\n\nOutput format: A concise, well-written short section suitable for inclusion in a technical report.\n**DO NOT** answer with anything except the report content.\n **KEEP** sources URLs",
     "keywords": ["query", "background"]
   },
   "CREATE_OUTPUT_HALLUCINATION": {
@@ -28,7 +28,7 @@
     "keywords": []
   },
   "PRE_REPORT_PROMPT": {
-    "text": "Respond ONLY with a properly formatted Markdown block.\n\nYou are a professional technical editor tasked with formatting the following report in Markdown. Do NOT explain your answer or add any commentary.\n\nInstructions:\n- Use consistent Markdown headers\n- Bullet points must use dashes (-)\n- Structure into clear sections and subsections\n- Keep a formal, direct tone\n- DO NOT add new content or summaries\n- DO NOT change the meaning, but rephrase for clarity\n- Avoid all filler phrases (e.g., 'here is your report')\n- Ensure valid Markdown, no trailing asterisks or extra formatting\n\nInput text:\n{background}",
+    "text": "Respond ONLY with a properly formatted Markdown block.\n\nYou are a professional technical editor tasked with formatting the following report in Markdown. Do NOT explain your answer or add any commentary.\n\nInstructions:\n- Use consistent Markdown headers\n- Bullet points must use dashes (-)\n- Structure into clear sections and subsections\n- Keep a formal, direct tone\n- DO NOT add new content or summaries\n- **KEEP** sources URLs.\n- DO NOT change the meaning, but rephrase for clarity\n- Avoid all filler phrases (e.g., 'here is your report')\n- Ensure valid Markdown, no trailing asterisks or extra formatting\n\nInput text:\n{background}",
     "keywords": ["background"]
   },
   "REPORT_PROMPT": {

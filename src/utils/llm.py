@@ -11,10 +11,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_groq import ChatGroq
 
-from config import PROMPT_PATH
+from constants import PROMPT_FILE
 from utils.save_file import save_state
 
-with Path.open(PROMPT_PATH) as file:
+with Path.open(PROMPT_FILE) as file:
     PROMPTS = json.load(file)
 from dotenv import load_dotenv
 
@@ -74,7 +74,7 @@ def human_validation_llm(state, llm, field_name):
 
 
 def query_llm(state, llm, field_name, json_output=False):
-    """Constructs and runs a prompt chain with the LLM based on the given state and prompt.
+    """Construct and runs a prompt chain with the LLM based on the given state and prompt.
 
     Args:
         state (StateGraph State): Input state.
@@ -84,6 +84,7 @@ def query_llm(state, llm, field_name, json_output=False):
 
     Returns:
         dict: Result dictionary with the LLM response under field_name.
+
     """
     prompt_name = f"{field_name.upper()}_PROMPT"
     if not state.load_recovery or (
@@ -116,7 +117,7 @@ def query_llm(state, llm, field_name, json_output=False):
 
 
 def check_hallucination(state, llm, field_name, human_prompt=""):
-    """Checks a given field in the state for hallucinations using a dedicated grading prompt.
+    """Check a given field in the state for hallucinations using a dedicated grading prompt.
 
     Args:
         state (dict): Input state containing the field to validate.
@@ -126,6 +127,7 @@ def check_hallucination(state, llm, field_name, human_prompt=""):
 
     Returns:
         dict: "yes" if no hallucination detected, "no" otherwise.
+
     """
     if not state.load_recovery:
         system_prompt = PROMPTS[f"{field_name.upper()}_HALLUCINATION"].get("text", "")

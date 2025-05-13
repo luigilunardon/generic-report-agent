@@ -6,14 +6,15 @@ from pathlib import Path
 
 import pypandoc
 
-from config import OUTPUT_DIR
+from constants import OUTPUT_DIR
 
 
 def mk_output_dir(name):
-    """Generates the output directory.
+    """Generate the output directory.
 
     Args:
         name (str): Name of the output directory.
+
     """
     directory = OUTPUT_DIR / name.replace(" ", "_")
     Path.mkdir(directory, exist_ok=True, parents=True)
@@ -21,12 +22,13 @@ def mk_output_dir(name):
 
 
 def save_md(content, directory, file_name="report.md"):
-    """Saves individual summary texts into separate files for each topic.
+    """Save individual summary texts into separate files for each topic.
 
     Args:
         content (str): Content to save.
         directory (Path): Path of the directory.
         file_name (str): Name of the file.
+
     """
     path = directory / file_name
     with Path.open(path, "w", encoding='utf-8') as file:
@@ -34,11 +36,12 @@ def save_md(content, directory, file_name="report.md"):
 
 
 def md_to_docx(directory, file_name="report.md"):
-    """Convert Markdown text to a .docx file following a template.
+    """Convert .md files to .docx files following a template.
 
     Args:
         directory (Path): Path of the output directory.
         file_name (str): The name of the file to convert.
+
     """
     try:
         pypandoc.get_pandoc_version()
@@ -64,6 +67,7 @@ def save_state(state, path):
     Args:
         state (OverallState): State of the graph.
         path (str): Path of the recovery file.
+
     """
     with Path.open(Path(path), 'w', encoding='utf-8') as f:
         json.dump(asdict(state), f, indent=2)

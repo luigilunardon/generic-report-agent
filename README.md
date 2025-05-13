@@ -22,7 +22,7 @@ To get a Tavily API key: https://docs.tavily.com/documentation/quickstart
 
 ## Fix your parameters
 
-Modify the config.py file to match your desired parameters.
+Modify the constants.py file to match your desired parameters.
 
 ## Run the program
 
