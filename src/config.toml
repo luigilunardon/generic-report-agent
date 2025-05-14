@@ -7,11 +7,9 @@ topic = "general"
 [llm]
 model_name = "llama-3.3-70b-versatile"
 
-# Other Configurations
-[settings]
-max_concurrency = 1
-
 # Parameters
 [parameters]
 query = "" 
 save_final_state = true
+task_length = 3
+max_concurrency = 1
