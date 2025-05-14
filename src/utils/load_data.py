@@ -43,6 +43,7 @@ def load_tasks_state(query):
         query (str): The user query.
 
     """
+    Path.mkdir(RECOVERY_DIR, exist_ok=True, parents=True)
     for directory in RECOVERY_DIR.iterdir():
         recovery_file_path = directory / "task.json"
         if recovery_file_path.exists():
