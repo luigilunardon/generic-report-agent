@@ -7,12 +7,14 @@ import sys
 from dotenv import load_dotenv
 from tavily import AsyncTavilyClient, TavilyClient
 
-from constants import config
-from utils.load_key import load_api_key
+from constants import CONFIG_FILE
+from utils.load_data import load_api_key, load_config
 from utils.save_file import save_state
 
 load_api_key(['tavily'])
 load_dotenv()
+
+config = load_config(CONFIG_FILE)
 
 tavily_client = TavilyClient(os.getenv("TAVILY_API_KEY"))
 tavily_async_client = AsyncTavilyClient()
@@ -67,5 +69,5 @@ async def web_search(state, field_name, queries):
 
         unique_sources = list(set(sources))
 
-        return {field_name: "\n\n".join(unique_sources)}
+        return {field_name: "\n\n".join(unique_sources), "load_recovery":False}
     return {}

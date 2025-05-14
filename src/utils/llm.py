@@ -9,15 +9,17 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.rate_limiters import InMemoryRateLimiter
 
-from constants import PROMPT_FILE
+from constants import CONFIG_FILE, PROMPT_FILE
 from utils.save_file import save_state
 
 with Path.open(PROMPT_FILE) as file:
     PROMPTS = json.load(file)
+
 from dotenv import load_dotenv
 
-from utils.load_key import load_api_key
+from utils.load_data import load_api_key, load_config
 
+config = load_config(CONFIG_FILE)
 load_api_key({'groq'})
 load_dotenv()
 
@@ -29,21 +31,27 @@ default_rate_limiter = InMemoryRateLimiter(
 )
 
 
-def human_validation_llm(state, llm, field_name):
-    """Use an llm to explain the suggested workflow in human readable form.
+def human_validation_tasks(state, llm):
+    """Use an llm to explain the suggested task workflow in human readable form.
 
     Args:
         state (dict): Input state containing the field to validate.
         llm (ChatGroq): Language model instance used.
-        field_name (str): Field to check.
 
     Returns:
-        dict: "yes" if approved detected, "no" otherwise.
+        dict: "no" if no retry is required, "yes" otherwise.
 
     """
-    prompt_name = f"{field_name.upper()}_VALIDATION_PROMPT"
-    field_state = getattr(state, field_name)
-    prompt = PromptTemplate(template=PROMPTS[prompt_name].get("text"), input_variables=[field_name])
+    for i, task in enumerate(state.tasks):
+        if len(task) != config["parameters"]["task_length"]:
+            return {"retry": "yes"}
+        previous_tasks = task[2]
+        for previous_task in previous_tasks:
+            if previous_task >= i:
+                return {"retry": "yes"}
+    prompt_name = "TASKS_VALIDATION_PROMPT"
+    field_state = state.tasks
+    prompt = PromptTemplate(template=PROMPTS[prompt_name].get("text"), input_variables=["tasks"])
     prompt_chain = prompt | llm | StrOutputParser()
     llm_answer = prompt_chain.invoke(field_state)
     print(f"\nSUGGESTED WORKFLOW:\n\n{llm_answer}\n\n")
@@ -87,7 +95,9 @@ def query_llm(state, llm, field_name, json_output=False):
                 return {field_name: getattr(llm_answer, "content", llm_answer)}
             prompt_chain = prompt | llm | StrOutputParser()
             llm_answer = json.loads(prompt_chain.invoke(relevant_states))
-            return dict(llm_answer)
+            answer = dict(llm_answer)
+            answer["load_recovery"] = False
+            return dict(answer)
 
         except Exception as e:
             print(e)
@@ -113,12 +123,12 @@ def check_hallucination(state, llm, field_name, human_prompt=""):
 
     """
     if not state.load_recovery:
-        if state.max_retry == 0:
+        max_retry = state.max_retry
+        if max_retry <= 0:
             hallucination_message = (
                 f"WARNING **HALLUCINATION DETECTED**\n\n{getattr(state, field_name)}"
             )
-            setattr(state, field_name, hallucination_message)
-            return {"retry": "no"}
+            return {"retry": "no", field_name: hallucination_message}
         system_prompt = PROMPTS[f"{field_name.upper()}_HALLUCINATION"].get("text", "")
         human_prompt = f"{field_name.replace('_', ' ')}: {getattr(state, field_name)}"
         prompt = ChatPromptTemplate.from_messages(
@@ -129,20 +139,20 @@ def check_hallucination(state, llm, field_name, human_prompt=""):
         score = ""
         while score not in {"yes", "no"}:
             try:
-                if state.max_retry == 0:
+                if max_retry <= 0:
                     hallucination_message = (
                         f"WARNING **AMBIGUOUS ANSWER**\n\n{getattr(state, field_name)}"
                     )
-                    setattr(state, field_name, hallucination_message)
-                    return {"retry": "no"}
+                    return {"retry": "no", field_name:hallucination_message, "max_retry":max_retry}
+                max_retry = max_retry - 1
                 score = hallucination_grader.invoke({})
-                state.max_retry = state.max_retry - 1
             except Exception as e:
                 print(e)
                 state.load_recovery = True
+                state.max_retry = 3
                 delattr(state, field_name)
                 path = state.recovery_path
                 save_state(state, path)
                 sys.exit(1)
-        return {"retry": score}
+        return {"retry": score, "max_retry": max_retry}
     return {"retry": "no"}
