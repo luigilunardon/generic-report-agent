@@ -11,13 +11,16 @@ from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
-from constants import RECOVERY_DIR, config
+from constants import CONFIG_FILE, RECOVERY_DIR
 from utils.graphs.create_graph import CreateState, create_graph_builder
 from utils.graphs.format_graph import FormatState, format_graph_builder
 from utils.graphs.search_graph import SearchState, search_graph_builder
 from utils.graphs.smart_search_graph import SmartSearchState, smart_search_graph_builder
-from utils.llm import default_rate_limiter, human_validation_llm, query_llm
+from utils.llm import default_rate_limiter, human_validation_tasks, query_llm
+from utils.load_data import load_config
 from utils.save_file import save_state
+
+config = load_config(CONFIG_FILE)
 
 retry_policy = RetryPolicy(max_attempts=4)
 
@@ -26,7 +29,7 @@ async def run_subgraph(builder, state_class, state_args):
     """Run a subgraph."""
     graph = builder()
     state = state_class(**state_args)
-    return await graph.ainvoke(state, {"max_concurrency": 1})
+    return await graph.ainvoke(state, {"max_concurrency": config["parameters"]["max_concurrency"]})
 
 
 _task_handler = {
@@ -68,6 +71,7 @@ class TaskPlannerState:
         retry (bool): Boolean value for hallucination handling.
         load_recovery (bool): Boolean value for loading recovery files.
         recovery_path (str): Path of the recovery file.
+        recovery_task (str): First task to execute after the recover file is loaded.
     """
 
     query: Optional[str] = None
@@ -77,6 +81,18 @@ class TaskPlannerState:
     load_recovery: Optional[bool] = False
     task_output: Optional[list] = field(default_factory=list)
     recovery_path: Optional[Path] = str(RECOVERY_DIR / "task.json")
+    recovery_task: Optional[str] = None
+
+
+def check_recovery(x):
+    """Check the presence of the recovery state."""
+    match (x.load_recovery, bool(x.tasks)):
+        case True, True:
+            return {"recovery_task": "execute_tasks"}
+        case True, False:
+            return {"recovery_task": "get_tasks"}
+        case False, _:
+            return {"recovery_task": "get_title"}
 
 
 def get_title(x):
@@ -91,7 +107,7 @@ def get_title(x):
     return query_llm(x, llm, "title")
 
 
-def get_recovery(x):
+def get_recovery_path(x):
     """Generate the recovery path."""
     directory_path = RECOVERY_DIR / x.title.replace(" ", "_")
     Path.mkdir(directory_path, exist_ok=True, parents=True)
@@ -118,28 +134,31 @@ def check_tasks(x):
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
     )
-    return human_validation_llm(x, llm, "tasks")
+    return human_validation_tasks(x, llm)
 
 
 async def execute_tasks(x):
     """Execute the list of tasks."""
-    tasks = x.tasks
-    task_output = []
     recovery_file_path = x.recovery_path
     recovery_directory = RECOVERY_DIR / x.title.replace(" ", "_")
 
-    for i, (task_type, query, background) in enumerate(tasks[len(task_output) :]):
+    first_task_index = len(x.task_output)
+    task_output = x.task_output
+    remaining_tasks = x.tasks[first_task_index:]
+
+    for i, (task_type, query, background) in enumerate(remaining_tasks):
+        updated_i = i + first_task_index
         builder, state_class, get_args, summary_field = _task_handler[task_type]
         state_args = get_args(query, background, task_output)
         state_args["load_recovery"] = False
-        state_args["recovery_path"] = str(recovery_directory / f"{task_type}_{i!s}.json")
+        state_args["recovery_path"] = str(recovery_directory / f"{task_type}_{updated_i!s}.json")
+        x.task_output = task_output
         save_state(x, recovery_file_path)
         try:
             answer = await run_subgraph(builder, state_class, state_args)
             task_output.append(answer[summary_field])
         except Exception as e:
-            print(f"Error in task {i}: {task_type}.\n\n{e}")
-            x.load_recovery = True
+            print(f"Error in task {updated_i}: {task_type}.\n\n{e}")
             sys.exit(1)
     if config["parameters"]["save_final_state"]:
         save_state(x, recovery_file_path)
@@ -162,8 +181,9 @@ def task_graph_builder():
     # Nodes
     # ----------------------------------
 
+    graph.add_node("check_recovery", check_recovery)
     graph.add_node("get_title", get_title)
-    graph.add_node("get_recovery", get_recovery)
+    graph.add_node("get_recovery_path", get_recovery_path)
     graph.add_node("get_tasks", get_tasks, retry=retry_policy)
 
     graph.add_node(
@@ -177,9 +197,10 @@ def task_graph_builder():
     # Edges
     # ----------------------------------
 
-    graph.add_edge(START, "get_title")
-    graph.add_edge("get_title", "get_recovery")
-    graph.add_edge("get_recovery", "get_tasks")
+    graph.add_edge(START, "check_recovery")
+    graph.add_conditional_edges("check_recovery", lambda s: s.recovery_task)
+    graph.add_edge("get_title", "get_recovery_path")
+    graph.add_edge("get_recovery_path", "get_tasks")
     graph.add_edge("get_tasks", "check_tasks")
     graph.add_conditional_edges(
         "check_tasks",

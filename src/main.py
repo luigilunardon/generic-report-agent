@@ -2,9 +2,12 @@
 
 import asyncio
 
-from constants import config
+from constants import CONFIG_FILE
 from utils.graphs.task_graph import TaskPlannerState, task_graph_builder
+from utils.load_data import load_config, load_tasks_state
 from utils.save_file import md_to_docx, mk_output_dir, save_md
+
+config = load_config(CONFIG_FILE)
 
 
 async def pipeline(query: str):
@@ -19,9 +22,11 @@ async def pipeline(query: str):
 
     """
     graph = task_graph_builder()
-    state = TaskPlannerState(query=query, load_recovery=False)
+    state = TaskPlannerState(**load_tasks_state(query))
 
-    answer = await graph.ainvoke(state, {"max_concurrency": 1})
+    answer = await graph.ainvoke(
+        state, {"max_concurrency": config["parameters"]["max_concurrency"]}
+    )
     directory_name = answer["title"]
     directory = mk_output_dir(directory_name)
     final_report = answer["task_output"][-1]

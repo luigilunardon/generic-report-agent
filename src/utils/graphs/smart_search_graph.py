@@ -8,10 +8,12 @@ from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
-from constants import RECOVERY_DIR
+from constants import CONFIG_FILE, RECOVERY_DIR
 from utils.graphs.search_graph import SearchState, search_graph_builder
 from utils.llm import default_rate_limiter, query_llm
+from utils.load_data import load_config
 
+config = load_config(CONFIG_FILE)
 retry_policy = RetryPolicy(max_attempts=4)
 
 
@@ -44,6 +46,7 @@ def get_queries(x):
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
     )
+    print("##########",sep ="", end = "")
 
     return query_llm(x, llm, "smart_search_queries", json_output=True)
 
@@ -52,7 +55,9 @@ async def get_summary(x):
     """Summarise search results."""
     sub_graph = search_graph_builder()
     sub_state = SearchState(queries=x.smart_search_queries, load_recovery=False)
-    answer = await sub_graph.ainvoke(sub_state, {"max_concurrency": 1})
+    answer = await sub_graph.ainvoke(
+        sub_state, {"max_concurrency": config["parameters"]["max_concurrency"]}
+    )
     return {"smart_search_summary": answer.get("search_summary")}
 
 

@@ -36,6 +36,7 @@ class CreateState:
 
 def ask_query(x):
     """Ask query."""
+    print("##########",sep ="", end = "")
     llm = ChatGroq(
         model=os.getenv("MODEL_NAME", "llama3-70b-8192"),
         temperature=0.0,
