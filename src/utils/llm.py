@@ -42,19 +42,22 @@ def fix_task_json(tasks):
 
     """
     checked_tasks = []
+
     try:
         for i, task in enumerate(tasks):
+            new_task = task
             if task[0] not in {"format", "create", "smart_search", "search"}:
                 return {}
             if (
                 task[0] in {"format", "smart_search"}
-                and len(task) < config["parameters"]["task_length"]
+                and len(task) == config["parameters"]["task_length"] - 1
             ):
-                new_task = [task[0], "", [j for j in task[2] if j < i]]
-            else:
-                new_task = [task[0], task[1], [j for j in task[2] if j < i]]
-            if new_task[0] != "create" or new_task[1] != "":
-                checked_tasks.append(new_task)
+                new_task = [task[0], "", task[1]]
+            if len(new_task) != config["parameters"]["task_length"]:
+                return {}
+            if task[0] == "create" and task[1] == "":
+                return {}
+            checked_tasks.append([new_task[0], new_task[1], [j for j in new_task[2] if j < i]])
         return {"tasks": checked_tasks}
     except Exception:
         return {}
