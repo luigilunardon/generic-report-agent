@@ -51,8 +51,9 @@ async def web_search(state, field_name, queries):
         state.load_recovery = False
 
         try:
+            formatted_queries = [query[:400] for query in queries]
             search_results = await asyncio.gather(
-                *[tavily_async_client.search(query, **search_params) for query in queries]
+                *[tavily_async_client.search(query, **search_params) for query in formatted_queries]
             )
         except Exception as e:
             print(e)
