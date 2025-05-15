@@ -46,7 +46,6 @@ def get_queries(x):
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
     )
-    print("##########",sep ="", end = "")
 
     return query_llm(x, llm, "smart_search_queries", json_output=True)
 

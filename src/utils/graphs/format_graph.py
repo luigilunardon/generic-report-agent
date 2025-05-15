@@ -38,7 +38,6 @@ def get_report(x):
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
     )
-    print("##########",sep ="", end = "")
 
     return query_llm(x, llm, "pre_report")
 

@@ -37,7 +37,6 @@ class SearchState:
 
 async def get_search(x):
     """Get search results."""
-    print("##########",sep ="", end = "")
     return await web_search(x, "search_results", x.queries)
 
 
