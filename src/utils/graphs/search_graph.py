@@ -1,38 +1,14 @@
 "Graph definition."
 
 import os
-from dataclasses import dataclass, field
-from typing import Optional
+from random import randint
 
 from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 
-from constants import RECOVERY_DIR
+from utils.graphs.states import SearchState
 from utils.llm import check_hallucination, default_rate_limiter, query_llm
 from utils.web_search import web_search
-
-
-@dataclass
-class SearchState:
-    """Represents the state of the search process.
-
-    Fields:
-        queries (list): User queries.
-        search_results (str): Query results.
-        search_summary (str): Summary of the results.
-        retry (bool): Boolean value for hallucination handling.
-        max_retry (int): Max number of hallucination retry checks.
-        load_recovery (bool): Boolean value for loading recovery files.
-        recovery_path (str): Path of the recovery file.
-    """
-
-    queries: Optional[list] = field(default_factory=list)
-    search_results: Optional[str] = None
-    search_summary: Optional[str] = None
-    retry: Optional[bool] = False
-    max_retry: Optional[int] = 3
-    load_recovery: Optional[bool] = False
-    recovery_path: Optional[str] = str(RECOVERY_DIR / "search.json")
 
 
 async def get_search(x):
@@ -47,6 +23,7 @@ def get_summary(x):
         temperature=0.0,
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
+        model_kwargs={"seed": randint(0, 2**32)},
     )
 
     return query_llm(x, llm, "search_summary")
@@ -59,6 +36,7 @@ def check_summary(x):
         temperature=0.0,
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
+        model_kwargs={"seed": randint(0, 2**32)},
     )
     human_prompt = f"Sources:\n{x.search_results}\n\n\n\nSummary:\n{x.search_summary}"
     return check_hallucination(x, llm, "search_summary", human_prompt)

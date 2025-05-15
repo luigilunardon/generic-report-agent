@@ -1,41 +1,20 @@
 "Graph definition."
 
 import os
-from dataclasses import dataclass, field
-from typing import Optional
+from random import randint
 
 from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
-from constants import CONFIG_FILE, RECOVERY_DIR
-from utils.graphs.search_graph import SearchState, search_graph_builder
+from constants import CONFIG_FILE
+from utils.graphs.search_graph import search_graph_builder
+from utils.graphs.states import SearchState, SmartSearchState
 from utils.llm import default_rate_limiter, query_llm
 from utils.load_data import load_config
 
 config = load_config(CONFIG_FILE)
 retry_policy = RetryPolicy(max_attempts=4)
-
-
-@dataclass
-class SmartSearchState:
-    """Represents the state of the search process.
-
-    Fields:
-        background (str): Background material.
-        smart_search_queries (str): AI-generated search queries.
-        smart_search_summary (str): Summary of the results.
-        retry (bool): Boolean value for hallucination handling.
-        load_recovery (bool): Boolean value for loading recovery files.
-        recovery_path (Path): Path of the recovery file.
-    """
-
-    background: Optional[str] = None
-    smart_search_queries: Optional[list] = field(default_factory=list)
-    smart_search_summary: Optional[str] = None
-    retry: Optional[bool] = False
-    load_recovery: Optional[bool] = False
-    recovery_path: Optional[str] = str(RECOVERY_DIR / "smart_search.json")
 
 
 def get_queries(x):
@@ -45,6 +24,7 @@ def get_queries(x):
         temperature=0.0,
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
+        model_kwargs={"seed": randint(0, 2**32)},
     )
 
     return query_llm(x, llm, "smart_search_queries", json_output=True)

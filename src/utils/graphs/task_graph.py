@@ -3,19 +3,25 @@
 import os
 import shutil
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from random import randint
 
 from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 from langgraph.pregel import RetryPolicy
 
 from constants import CONFIG_FILE, RECOVERY_DIR
-from utils.graphs.create_graph import CreateState, create_graph_builder
-from utils.graphs.format_graph import FormatState, format_graph_builder
-from utils.graphs.search_graph import SearchState, search_graph_builder
-from utils.graphs.smart_search_graph import SmartSearchState, smart_search_graph_builder
+from utils.graphs.create_graph import create_graph_builder
+from utils.graphs.format_graph import format_graph_builder
+from utils.graphs.search_graph import search_graph_builder
+from utils.graphs.smart_search_graph import smart_search_graph_builder
+from utils.graphs.states import (
+    CreateState,
+    FormatState,
+    SearchState,
+    SmartSearchState,
+    TaskPlannerState,
+)
 from utils.llm import default_rate_limiter, human_validation_tasks, query_llm
 from utils.load_data import load_config
 from utils.save_file import save_state
@@ -60,30 +66,6 @@ _task_handler = {
 }
 
 
-@dataclass
-class TaskPlannerState:
-    """Represents the complete state of the profiling process.
-
-    Fields:
-        query (str): User query
-        title (str): Name summarising the query
-        tasks (list): List of tasks to solve the query
-        retry (bool): Boolean value for hallucination handling.
-        load_recovery (bool): Boolean value for loading recovery files.
-        recovery_path (str): Path of the recovery file.
-        recovery_task (str): First task to execute after the recover file is loaded.
-    """
-
-    query: Optional[str] = None
-    title: Optional[str] = None
-    tasks: Optional[list] = field(default_factory=list)
-    retry: Optional[bool] = False
-    load_recovery: Optional[bool] = False
-    task_output: Optional[list] = field(default_factory=list)
-    recovery_path: Optional[Path] = str(RECOVERY_DIR / "task.json")
-    recovery_task: Optional[str] = None
-
-
 def check_recovery(x):
     """Check the presence of the recovery state."""
     match (x.load_recovery, bool(x.tasks)):
@@ -102,6 +84,7 @@ def get_title(x):
         temperature=0.0,
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
+        model_kwargs={"seed": randint(0, 2**32)},
     )
 
     return query_llm(x, llm, "title")
@@ -121,6 +104,7 @@ def get_tasks(x):
         temperature=0.0,
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
+        model_kwargs={"seed": randint(0, 2**32)},
     )
 
     return query_llm(x, llm, "tasks", json_output=True)
@@ -133,6 +117,7 @@ def check_tasks(x):
         temperature=0.0,
         max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
         rate_limiter=default_rate_limiter,
+        model_kwargs={"seed": randint(0, 2**32)},
     )
     return human_validation_tasks(x, llm)
 
