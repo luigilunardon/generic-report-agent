@@ -1,13 +1,14 @@
 "Load keys in the .env file."
 
 import json
+import shutil
 from pathlib import Path
 
 import tomllib
 from dotenv import get_key, set_key
 
 from constants import RECOVERY_DIR, SRC_DIR
-import shutil
+
 
 def load_config(filename):
     """Load config from toml file.
@@ -53,13 +54,12 @@ def load_tasks_state(query):
                 answer = ""
                 while answer not in {"y", "n"}:
                     answer = input(
-                        f"Do you want to reuse the recovery file {recovery_file_path}? (y/n): "
+                        f"Do you want to reuse the recovery file in {recovery_file_path}? (y/n): "
                     )
                     if answer:
                         answer = answer[0].lower()
                 if answer == "y":
                     recovery_file["load_recovery"] = True
                     return recovery_file
-                else:
-                    shutil.rmtree(directory)
+                shutil.rmtree(directory)
     return {"query": query, "load_recovery": False}

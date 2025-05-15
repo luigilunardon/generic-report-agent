@@ -31,6 +31,35 @@ default_rate_limiter = InMemoryRateLimiter(
 )
 
 
+def fix_task_json(tasks):
+    """Try to fix the json file if possible.
+
+    Args:
+        tasks (list): list of tasks.
+
+    Returns:
+        dict: fixed tasks list, if possible.
+
+    """
+    checked_tasks = []
+    try:
+        for i, task in enumerate(tasks):
+            if task[0] not in {"format", "create", "smart_search", "search"}:
+                return {}
+            if (
+                task[0] in {"format", "smart_search"}
+                and len(task) < config["parameters"]["task_length"]
+            ):
+                new_task = [task[0], "", [j for j in task[2] if j < i]]
+            else:
+                new_task = [task[0], task[1], [j for j in task[2] if j < i]]
+            if new_task[0] != "create" or new_task[1] != "":
+                checked_tasks.append(new_task)
+        return {"tasks": checked_tasks}
+    except Exception:
+        return {}
+
+
 def human_validation_tasks(state, llm):
     """Use an llm to explain the suggested task workflow in human readable form.
 
@@ -42,15 +71,19 @@ def human_validation_tasks(state, llm):
         dict: "no" if no retry is required, "yes" otherwise.
 
     """
-    for i, task in enumerate(state.tasks):
-        if len(task) != config["parameters"]["task_length"]:
-            return {"retry": "yes"}
-        previous_tasks = task[2]
-        for previous_task in previous_tasks:
-            if previous_task >= i:
-                return {"retry": "yes"}
+    if state.max_retry < 0:
+        message = (
+            "Failed to generate the list of tasks."
+            "State saved, try manual debugging.\n"
+            f"Recovery file: {state.recovery_path}"
+        )
+        print(message)
+        save_state(state, state.recovery_path)
+        sys.exit(1)
     prompt_name = "TASKS_VALIDATION_PROMPT"
-    field_state = state.tasks
+    field_state = fix_task_json(state.tasks).get("tasks", "")
+    if not field_state:
+        return {"retry": "yes", "max_retry": state.max_retry - 1}
     prompt = PromptTemplate(template=PROMPTS[prompt_name].get("text"), input_variables=["tasks"])
     prompt_chain = prompt | llm | StrOutputParser()
     llm_answer = prompt_chain.invoke(field_state)
@@ -61,7 +94,7 @@ def human_validation_tasks(state, llm):
             if user_answer[0].lower() == "y":
                 return {"retry": "no"}
             if user_answer[0].lower() == "n":
-                return {"retry": "yes"}
+                return {"retry": "yes", "max_retry": state.max_retry - 1}
 
 
 def query_llm(state, llm, field_name, json_output=False):
@@ -143,7 +176,11 @@ def check_hallucination(state, llm, field_name, human_prompt=""):
                     hallucination_message = (
                         f"WARNING **AMBIGUOUS ANSWER**\n\n{getattr(state, field_name)}"
                     )
-                    return {"retry": "no", field_name:hallucination_message, "max_retry":max_retry}
+                    return {
+                        "retry": "no",
+                        field_name: hallucination_message,
+                        "max_retry": max_retry,
+                    }
                 max_retry = max_retry - 1
                 score = hallucination_grader.invoke({})
             except Exception as e:

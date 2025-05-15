@@ -72,6 +72,7 @@ lint.ignore = [
     "PERF203",
     "D203",
     "D213",
+    "S311",
 ]
 
 lint.fixable = ["ALL"]

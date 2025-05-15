@@ -69,5 +69,5 @@ async def web_search(state, field_name, queries):
 
         unique_sources = list(set(sources))
 
-        return {field_name: "\n\n".join(unique_sources), "load_recovery":False}
+        return {field_name: "\n\n".join(unique_sources), "load_recovery": False}
     return {}
