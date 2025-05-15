@@ -21,6 +21,16 @@ def mk_output_dir(name):
     return directory
 
 
+def _fix_title(md):
+    """Check the md file and correct some common causes of conversion failure."""
+    md_list = md.split("---\n")
+    title_list = md_list[1].split("title:")
+    title = title_list[1].replace('"', '').replace("{", "").replace("}", "").strip()
+    md_list[1] = f'title: "{title}"\n'
+
+    return "---\n".join(md_list)
+
+
 def save_md(content, directory, file_name="report.md"):
     """Save individual summary texts into separate files for each topic.
 
@@ -32,7 +42,7 @@ def save_md(content, directory, file_name="report.md"):
     """
     path = directory / file_name
     with Path.open(path, "w", encoding='utf-8') as file:
-        file.write(content)
+        file.write(_fix_title(content))
 
 
 def md_to_docx(directory, file_name="report.md"):
